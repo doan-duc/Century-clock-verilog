@@ -1,45 +1,47 @@
-# Đồng Hồ Thế Kỷ (Verilog)
+---
 
-Đồng hồ/lịch số **chính xác theo lịch** được hiện thực bằng **Verilog**, hướng tới chạy trên các bo mạch FPGA. Dự án cung cấp các bộ đếm giây/phút/giờ/ngày/tháng/năm, tạo xung 1 Hz từ clock hệ thống, chỉnh thời gian bằng nút nhấn (kèm khử dội và one‑pulse), và giải mã hiển thị 7‑segment.
+# Century Clock (Verilog)
+
+A **digital clock/calendar** (accurate to calendar rules) implemented in **Verilog**, designed to run on FPGA boards. The project provides counters for seconds/minutes/hours/days/months/years, generates a 1 Hz pulse from the system clock, supports time adjustment via push-buttons (with debounce and one-pulse logic), and decodes values for 7-segment display.
 
 ---
 
-## ✨ Tính năng
+## ✨ Features
 
-* **Chuỗi thời gian & lịch đầy đủ**: giây → phút → giờ → ngày → tháng → năm.
-* **Chỉnh thời gian bằng nút nhấn** (có khử dội & xung một nhịp one‑pulse); chọn trường cần chỉnh.
-* **Chia clock 1 Hz** từ clock hệ thống tần số cao.
-* **Xuất 7‑segment** qua chuyển BCD (trợ giúp 0–99) + BCD→7SEG.
-* **Nháy/blink** để báo trường đang được chỉnh.
+* **Full time & calendar chain**: second → minute → hour → day → month → year.
+* **Time adjustment via buttons** (with debounce & one-pulse); select the field to adjust.
+* **Clock divider to 1 Hz** from a high-frequency system clock.
+* **7-segment output** through BCD conversion (0–99 helper) + BCD→7SEG.
+* **Blinking** to indicate the field currently being adjusted.
 
-## 🧱 Tổng quan module
+## 🧱 Module Overview
 
-Các module Verilog được nhóm theo chức năng:
+Modules are grouped by functionality:
 
-* **Top‑level**
+* **Top-level**
 
-  * `top_level.v`: ghép nối toàn bộ khối con, map I/O ra chân bo mạch.
+  * `top_level.v`: integrates all sub-blocks, maps I/O to FPGA pins.
 
-* **Giữ thời gian & chỉnh**
+* **Time keeping & adjustment**
 
-  * `clock_divider_1s.v`: tạo xung kích hoạt 1 Hz từ clock hệ thống.
+  * `clock_divider_1s.v`: generates 1 Hz tick from system clock.
   * `count_adjust_sec.v`, `count_adjust_min.v`, `count_adjust_hour.v`.
-  * `count_adjust_day.v`, `count_adjust_month.v`, `count_adjust_year.v` (quy tắc lịch: số ngày/tháng, năm nhuận).
-  * `adjust_select.v`: chọn trường (sec/min/hour/day/month/year) để chỉnh.
+  * `count_adjust_day.v`, `count_adjust_month.v`, `count_adjust_year.v` (calendar rules: days/months, leap years).
+  * `adjust_select.v`: selects which field (sec/min/hour/day/month/year) to adjust.
 
-* **Tương tác người dùng / UX**
+* **User interaction / UX**
 
-  * `btn_onepulse.v`: chuyển nút cơ khí thành xung 1 chu kỳ sạch.
-  * `clock_blink.v`: tạo tín hiệu nháy để chớp trường đang chỉnh.
+  * `btn_onepulse.v`: converts a mechanical button press into a clean one-cycle pulse.
+  * `clock_blink.v`: generates blinking signal to highlight the field being adjusted.
 
-* **Hiển thị**
+* **Display**
 
-  * `bcd_0_99.v`: tách giá trị thành hàng chục/hàng đơn vị (2 chữ số).
-  * `bcd_to_7seg.v`: ánh xạ BCD → 7 thanh (a–g).
+  * `bcd_0_99.v`: splits value into tens/ones (2 digits).
+  * `bcd_to_7seg.v`: maps BCD → 7-segment outputs (a–g).
 
-> ⚙️ **TODO**: nếu dùng nhiều LED 7‑seg cần quét/mux, thêm module scan driver và mô tả tại đây.
+> ⚙️ **TODO**: If multiple 7-segment LEDs are used, add a scan/mux driver module and describe it here.
 
-## 🗂️ Gợi ý cấu trúc dự án
+## 🗂️ Suggested Project Structure
 
 ```
 century-clock-verilog/
@@ -55,17 +57,19 @@ century-clock-verilog/
 ├─ count_adjust_month.v
 ├─ count_adjust_sec.v
 ├─ count_adjust_year.v
-└─ top_level.v   # đặt module này làm top khi tổng hợp
+└─ top_level.v   # set this as the top module when synthesizing
 ```
 
-## ⚙️ Cách hoạt động (pipeline)
+## ⚙️ How It Works (pipeline)
 
-1. **`clock_divider_1s`** lấy clock hệ thống → sinh tick 1 Hz (⚙️ **TODO**: xác nhận tần số clock vào và hằng chia).
-2. **Bộ đếm** (`count_adjust_*`) tăng theo tick 1 Hz và tạo carry sang trường kế; ở **chế độ chỉnh**, trường được chọn sẽ tăng theo nút nhấn.
-3. **Logic lịch** trong `day/month/year` đảm bảo đúng 28/29/30/31 ngày và năm nhuận.
-4. **Hiển thị**: giá trị đi qua `bcd_0_99` và `bcd_to_7seg` để ra 7‑seg; `clock_blink` có thể tắt/nháy trường đang chỉnh.
+1. **`clock_divider_1s`** takes the system clock → generates a 1 Hz tick (⚙️ **TODO**: confirm input clock frequency and divider constant).
+2. **Counters** (`count_adjust_*`) increment on each 1 Hz tick and propagate carry to the next field; in **adjust mode**, the selected field increments on button press.
+3. **Calendar logic** in `day/month/year` ensures correct 28/29/30/31 days and leap years.
+4. **Display**: values pass through `bcd_0_99` and `bcd_to_7seg` to drive the 7-segment; `clock_blink` can hide/blink the currently adjusted field.
 
-## 🙌 Ghi công
+## 🙌 Credits
 
-* Tác giả: Doan Sinh Duc
-* Môn học/Dự án: Digital design
+* Author: Doan Sinh Duc
+* Course/Project: Digital Design
+
+---
