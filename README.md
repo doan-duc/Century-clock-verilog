@@ -39,8 +39,6 @@ Modules are grouped by functionality:
   * `bcd_0_99.v`: splits value into tens/ones (2 digits).
   * `bcd_to_7seg.v`: maps BCD → 7-segment outputs (a–g).
 
-> ⚙️ **TODO**: If multiple 7-segment LEDs are used, add a scan/mux driver module and describe it here.
-
 ## 🗂️ Suggested Project Structure
 
 ```
